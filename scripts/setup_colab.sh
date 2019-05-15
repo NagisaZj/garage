@@ -116,7 +116,7 @@ if [[ -z "`command -v file`" ]]; then
   apt-get install -y -q file libmagic-dev
   file --version
 fi
-  
+
 # Verify there's a file in the mjkey path
 test "$(file -b --mime-type ${_arg_mjkey})" == "text/plain" \
   || _PRINT_HELP=yes die \
@@ -217,8 +217,8 @@ cp "${_arg_mjkey}" "${HOME}/.mujoco/mjkey.txt"
   MUJOCO_150="$(mktemp -d)/mujoco_150"
   git clone --branch 1.50.1.1 --depth 1 https://github.com/openai/mujoco-py.git $MUJOCO_150
   pip install -e $MUJOCO_150
-  
-  
+
+
   # install dm-control related to mujoco 1.50
   # pip install -v git+git://github.com/deepmind/dm_control.git@mujoco1.50
   pip install git+git://github.com/deepmind/dm_control.git@92f9913013face0468442cd0964d5973ea2089ea
@@ -228,7 +228,7 @@ cp "${_arg_mjkey}" "${HOME}/.mujoco/mjkey.txt"
   pip install -e .[all]
   pip install -e .[dev]
   pip install git+https://github.com/rlworkgroup/metaworlds.git@master#egg=metaworlds
-  pip install git+https://github.com/rlworkgroup/viskit.git@master#egg=viskit  
+  pip install git+https://github.com/rlworkgroup/viskit.git@master#egg=viskit
 
   if [[ "${_arg_gpu}" = on ]]; then
     # Remove any TensorFlow installations before installing the GPU flavor
@@ -240,4 +240,3 @@ cp "${_arg_mjkey}" "${HOME}/.mujoco/mjkey.txt"
 
 >&2 echo "end of setup_colab.sh"
 echo -e "\ngarage is installed!"
-
