@@ -16,14 +16,18 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
     def __init__(
             self,
             env_spec,
-            name="GaussianLSTMPolicy",
+            name='GaussianLSTMPolicy',
             hidden_dim=32,
+            hidden_nonlinearity=tf.tanh,
+            recurrent_nonlinearity=tf.nn.sigmoid,
+            recurrent_w_x_init=L.XavierUniformInitializer(),
+            recurrent_w_h_init=L.OrthogonalInitializer(),
+            output_nonlinearity=None,
+            output_w_init=L.XavierUniformInitializer(),
             feature_network=None,
             state_include_action=True,
-            hidden_nonlinearity=tf.tanh,
             learn_std=True,
             init_std=1.0,
-            output_nonlinearity=None,
             lstm_layer_cls=L.LSTMLayer,
             use_peepholes=False,
             std_share_network=False,
@@ -36,9 +40,9 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
         """
         assert isinstance(env_spec.action_space, Box)
 
-        self._mean_network_name = "mean_network"
-        self._std_network_name = "std_network"
-        with tf.variable_scope(name, "GaussianLSTMPolicy"):
+        self._mean_network_name = 'mean_network'
+        self._std_network_name = 'std_network'
+        with tf.variable_scope(name, 'GaussianLSTMPolicy'):
             Serializable.quick_init(self, locals())
             super(GaussianLSTMPolicy, self).__init__(env_spec)
 
@@ -50,7 +54,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
             else:
                 input_dim = obs_dim
 
-            l_input = L.InputLayer(shape=(None, None, input_dim), name="input")
+            l_input = L.InputLayer(shape=(None, None, input_dim), name='input')
 
             if feature_network is None:
                 feature_dim = input_dim
@@ -62,7 +66,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
                 l_feature = L.OpLayer(
                     l_flat_feature,
                     extras=[l_input],
-                    name="reshape_feature",
+                    name='reshape_feature',
                     op=lambda flat_feature, input: tf.reshape(
                         flat_feature,
                         tf.stack([
@@ -79,34 +83,38 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
                     output_dim=2 * action_dim,
                     hidden_dim=hidden_dim,
                     hidden_nonlinearity=hidden_nonlinearity,
+                    recurrent_nonlinearity=recurrent_nonlinearity,
+                    recurrent_w_x_init=recurrent_w_x_init,
+                    recurrent_w_h_init=recurrent_w_h_init,
                     output_nonlinearity=output_nonlinearity,
+                    output_w_init=output_w_init,
                     lstm_layer_cls=lstm_layer_cls,
-                    name="lstm_mean_network",
+                    name='lstm_mean_network',
                     use_peepholes=use_peepholes,
                 )
 
                 l_mean = L.SliceLayer(
                     mean_network.output_layer,
                     slice(action_dim),
-                    name="mean_slice",
+                    name='mean_slice',
                 )
 
                 l_step_mean = L.SliceLayer(
                     mean_network.step_output_layer,
                     slice(action_dim),
-                    name="step_mean_slice",
+                    name='step_mean_slice',
                 )
 
                 l_log_std = L.SliceLayer(
                     mean_network.output_layer,
                     slice(action_dim, 2 * action_dim),
-                    name="log_std_slice",
+                    name='log_std_slice',
                 )
 
                 l_step_log_std = L.SliceLayer(
                     mean_network.step_output_layer,
                     slice(action_dim, 2 * action_dim),
-                    name="step_log_std_slice",
+                    name='step_log_std_slice',
                 )
             else:
                 mean_network = LSTMNetwork(
@@ -115,9 +123,13 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
                     output_dim=action_dim,
                     hidden_dim=hidden_dim,
                     hidden_nonlinearity=hidden_nonlinearity,
+                    recurrent_nonlinearity=recurrent_nonlinearity,
+                    recurrent_w_x_init=recurrent_w_x_init,
+                    recurrent_w_h_init=recurrent_w_h_init,
                     output_nonlinearity=output_nonlinearity,
+                    output_w_init=output_w_init,
                     lstm_layer_cls=lstm_layer_cls,
-                    name="lstm_mean_network",
+                    name='lstm_mean_network',
                     use_peepholes=use_peepholes,
                 )
 
@@ -129,7 +141,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
                     mean_network.input_layer,
                     num_units=action_dim,
                     param=tf.constant_initializer(np.log(init_std)),
-                    name="output_log_std",
+                    name='output_log_std',
                     trainable=learn_std,
                 )
 
@@ -137,7 +149,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
                     mean_network.step_input_layer,
                     num_units=action_dim,
                     param=l_log_std.param,
-                    name="step_output_log_std",
+                    name='step_output_log_std',
                     trainable=learn_std,
                 )
 
@@ -148,7 +160,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
             self.name = name
 
             flat_input_var = tf.placeholder(
-                dtype=tf.float32, shape=(None, input_dim), name="flat_input")
+                dtype=tf.float32, shape=(None, input_dim), name='flat_input')
             if feature_network is None:
                 feature_var = flat_input_var
             else:
@@ -162,16 +174,16 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
                         l_step_mean, mean_network.step_hidden_layer,
                         mean_network.step_cell_layer
                     ], {mean_network.step_input_layer: feature_var})
-                out_step_mean = tf.identity(out_step_mean, "step_mean")
-                out_step_hidden = tf.identity(out_step_hidden, "step_hidden")
-                out_mean_cell = tf.identity(out_mean_cell, "mean_cell")
+                out_step_mean = tf.identity(out_step_mean, 'step_mean')
+                out_step_hidden = tf.identity(out_step_hidden, 'step_hidden')
+                out_mean_cell = tf.identity(out_mean_cell, 'mean_cell')
 
             with tf.name_scope(self._std_network_name, values=[feature_var]):
                 out_step_log_std = L.get_output(
                     l_step_log_std,
                     {mean_network.step_input_layer: feature_var})
                 out_step_log_std = tf.identity(out_step_log_std,
-                                               "step_log_std")
+                                               'step_log_std')
 
             self.f_step_mean_std = tensor_utils.compile_function([
                 flat_input_var,
@@ -200,12 +212,12 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
 
     @overrides
     def dist_info_sym(self, obs_var, state_info_vars, name=None):
-        with tf.name_scope(name, "dist_info_sym", [obs_var, state_info_vars]):
+        with tf.name_scope(name, 'dist_info_sym', [obs_var, state_info_vars]):
             n_batches = tf.shape(obs_var)[0]
             n_steps = tf.shape(obs_var)[1]
             obs_var = tf.reshape(obs_var, tf.stack([n_batches, n_steps, -1]))
             if self.state_include_action:
-                prev_action_var = state_info_vars["prev_action"]
+                prev_action_var = state_info_vars['prev_action']
                 all_input_var = tf.concat(
                     axis=2, values=[obs_var, prev_action_var])
             else:
@@ -287,7 +299,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
         self.prev_cells = cell_vec
         agent_info = dict(mean=means, log_std=log_stds)
         if self.state_include_action:
-            agent_info["prev_action"] = np.copy(prev_actions)
+            agent_info['prev_action'] = np.copy(prev_actions)
         return actions, agent_info
 
     @property
@@ -303,7 +315,7 @@ class GaussianLSTMPolicy(StochasticPolicy, LayersPowered, Serializable):
     def state_info_specs(self):
         if self.state_include_action:
             return [
-                ("prev_action", (self.action_dim, )),
+                ('prev_action', (self.action_dim, )),
             ]
         else:
             return []
