@@ -18,7 +18,7 @@ class TestPPO(TfGraphTestCase):
     def test_ppo_pendulum(self):
         """Test PPO with Pendulum environment."""
         with LocalRunner(self.sess) as runner:
-            env = TfEnv(normalize(gym.make("InvertedDoublePendulum-v2")))
+            env = TfEnv(normalize(gym.make('InvertedDoublePendulum-v2')))
             policy = GaussianMLPPolicy(
                 env_spec=env.spec,
                 hidden_sizes=(64, 64),
@@ -38,15 +38,15 @@ class TestPPO(TfGraphTestCase):
                 lr_clip_range=0.01,
                 optimizer_args=dict(batch_size=32, max_epochs=10))
             runner.setup(algo, env)
-            last_avg_ret = runner.train(n_epochs=10, batch_size=2048)
-            assert last_avg_ret > 40
+            last_avg_ret = runner.train(n_epochs=10, batch_size=64)
+            assert last_avg_ret > 30
 
             env.close()
 
     def test_ppo_pendulum_recurrent(self):
         """Test PPO with Pendulum environment and recurrent policy."""
         with LocalRunner() as runner:
-            env = TfEnv(normalize(gym.make("InvertedDoublePendulum-v2")))
+            env = TfEnv(normalize(gym.make('InvertedDoublePendulum-v2')))
             policy = GaussianLSTMPolicy(env_spec=env.spec, )
             baseline = GaussianMLPBaseline(
                 env_spec=env.spec,
@@ -63,7 +63,7 @@ class TestPPO(TfGraphTestCase):
                 plot=False,
             )
             runner.setup(algo, env)
-            last_avg_ret = runner.train(n_epochs=10, batch_size=2048)
-            assert last_avg_ret > 40
+            last_avg_ret = runner.train(n_epochs=10, batch_size=64)
+            assert last_avg_ret > 30
 
             env.close()

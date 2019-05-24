@@ -89,7 +89,7 @@ class GaussianLSTMPolicyWithModel(StochasticPolicy2):
         if not isinstance(env_spec.action_space, akro.tf.Box):
             raise ValueError('GaussianLSTMPolicy only works with '
                              'akro.tf.Box action space, but not {}'.format(
-                                 type(env_spec.action_space)))
+                                 env_spec.action_space))
         super().__init__(name, env_spec)
         self._obs_dim = env_spec.observation_space.flat_dim
         self._action_dim = env_spec.action_space.flat_dim
